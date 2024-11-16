@@ -5,16 +5,18 @@ from torch.nn import functional as F
 # hyper params
 torch.manual_seed(1337)
 context_size = 8
-batch_size = 32
+batch_size = 64
 max_iters = 5000
-eval_interval = 300
-learning_rate = 1e-3
+eval_interval = 500
+learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 n_embed = 32
+n_head = 4
+dropout = 0.2
 
 
-with open("tinyshakespeare.txt", 'r') as f:
+with open("tinyshakespeare.txt", 'r', encoding='utf-8') as f:
     all_text = f.read()
 
 vocab = sorted(list(set(all_text)))
@@ -47,6 +49,7 @@ class AttentionHead(nn.Module):
         self.WK = nn.Linear(n_embed, head_size, bias=False)
         self.WV = nn.Linear(n_embed, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(context_size, context_size)))
+        self.dropout = nn.Dropout(dropout)
     
     def forward(self, x):
         """
@@ -60,6 +63,7 @@ class AttentionHead(nn.Module):
         scores = q@k.transpose(-2, -1) * self.head_size**-0.5  # scores of shape (B, T, T)
         scores = scores.masked_fill(self.tril[:T, :T]==0, value=-torch.inf)
         attentions = F.softmax(scores, dim=-1)
+        attentions = self.dropout(attentions)
         output = attentions@v  # output of size (B, T, head_size)
 
         return output
@@ -68,13 +72,15 @@ class AttentionHead(nn.Module):
 class FeedFroward(nn.Module):
     def __init__(self):
         super().__init__()
-        self.l1 = nn.Linear(n_embed, n_embed)
-        self.l2 = nn.Linear(n_embed, n_embed)
+        self.feedforward = nn.Sequential(
+            nn.Linear(n_embed, n_embed*4),
+            nn.ReLU(),
+            nn.Linear(n_embed*4, n_embed),
+            nn.Dropout(dropout)
+        )
     
     def forward(self, x):
-        x = F.relu(self.l1(x))
-        x = self.l2(x)
-        return x
+        return self.feedforward(x)
 
 
 class DecoderBlock(nn.Module):
@@ -82,6 +88,7 @@ class DecoderBlock(nn.Module):
         super().__init__()
         head_size = n_embed // n_heads
         self.MultiHeadAttention = nn.ModuleList([AttentionHead(head_size) for _ in range(n_heads)])
+        self.project = nn.Linear(n_embed, n_embed)
         self.layer_norm1 = nn.LayerNorm(n_embed)
         self.feedForward = FeedFroward()
         self.layer_norm2 = nn.LayerNorm(n_embed)
@@ -90,10 +97,11 @@ class DecoderBlock(nn.Module):
         """
         x is of shape (B, T, n_embed)
         """
+        x = self.layer_norm1(x)
         attentioned = torch.concat([attention(x) for attention in self.MultiHeadAttention], dim=-1)
-        x = self.layer_norm1(x + attentioned)
-        forwarded = self.feedForward(x)
-        x = self.layer_norm2(x + forwarded)
+        x = x + self.project(attentioned)
+        x = self.layer_norm2(x)
+        x = x + self.feedForward(x)
         return x
 
 
@@ -102,7 +110,8 @@ class GPT(nn.Module):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, n_embed)
         self.pos_embed = nn.Embedding(context_size, n_embed)
-        self.decoders = nn.ModuleList([DecoderBlock(n_heads) for _ in range(n_blocks)])
+        self.decoders = nn.Sequential(*[DecoderBlock(n_heads) for _ in range(n_blocks)], nn.LayerNorm(n_embed))
+        # self.layer_norm = nn.LayerNorm(n_embed)
         self.lm_head = nn.Linear(n_embed, vocab_size)
 
     def forward(self, x, targets=None):
@@ -114,8 +123,8 @@ class GPT(nn.Module):
         embeddings = self.embedding(x) 
         pos_embeds = self.pos_embed(torch.arange(T, device=device))  # T * n_embed
         x = embeddings + pos_embeds
-        for decoder in self.decoders:
-            x = decoder(x)
+        x = self.decoders(x)
+        # x = self.layer_norm(x)
         logits = self.lm_head(x)
         B, T, C = logits.shape  # logits shape (B, T, C)
         
