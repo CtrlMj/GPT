@@ -1,1 +1,2 @@
 ray[train]==2.39.0
+jupyterlab==4.3.1
