@@ -2,47 +2,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-# hyper params
-torch.manual_seed(1337)
-context_size = 8
-batch_size = 64
-max_iters = 5000
-eval_interval = 500
-learning_rate = 3e-4
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-eval_iters = 200
-n_embed = 32
-n_head = 4
-dropout = 0.2
-
-
-with open("tinyshakespeare.txt", 'r', encoding='utf-8') as f:
-    all_text = f.read()
-
-vocab = sorted(list(set(all_text)))
-vocab_size = len(vocab)
-ctoi = {c: i for i, c in enumerate(vocab)}
-itoc = {i: c for i, c in enumerate(vocab)}
-encode = lambda s: [ctoi[x] for x in s]
-decode = lambda l: ''.join([itoc[i] for i in l])
-
-
-all_data = torch.tensor(encode(all_text), dtype=torch.long)
-n = int(all_data.shape[0]*0.9)
-train_data = all_data[:n]
-val_data = all_data[n:]
-
-
-def get_batch(split='train'):
-    data = train_data if split == 'train' else val_data
-    idx = torch.randint(high=len(data)-context_size, size=(batch_size,))
-    x = torch.stack([data[i:i+context_size] for i in idx])
-    y = torch.stack([data[i+1:i+context_size+1] for i in idx])
-    return x, y
-
-
 class AttentionHead(nn.Module):
-    def __init__(self, head_size) -> None:
+    def __init__(self, head_size, n_embed=32, dropout=0.2) -> None:
         super().__init__()
         self.head_size = head_size
         self.WQ = nn.Linear(n_embed, head_size, bias=False)
@@ -70,7 +31,7 @@ class AttentionHead(nn.Module):
 
 
 class FeedFroward(nn.Module):
-    def __init__(self):
+    def __init__(self, n_embed=32, dropout=0.2):
         super().__init__()
         self.feedforward = nn.Sequential(
             nn.Linear(n_embed, n_embed*4),
@@ -84,7 +45,7 @@ class FeedFroward(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, n_heads) -> None:
+    def __init__(self, n_heads, n_embed=32) -> None:
         super().__init__()
         head_size = n_embed // n_heads
         self.MultiHeadAttention = nn.ModuleList([AttentionHead(head_size) for _ in range(n_heads)])
@@ -106,7 +67,7 @@ class DecoderBlock(nn.Module):
 
 
 class GPT(nn.Module):
-    def __init__(self, n_heads, n_blocks):
+    def __init__(self, n_heads, n_blocks, vocab_size, n_embed=32):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, n_embed)
         self.pos_embed = nn.Embedding(context_size, n_embed)
@@ -135,7 +96,8 @@ class GPT(nn.Module):
             return logits, loss
         else:
             return logits, None
-
+    
+    @torch.inference_mode()
     def generate(self, x, max_size=100):
         """
         x of shape (B, T)
@@ -148,21 +110,3 @@ class GPT(nn.Module):
             next_tokens = torch.multinomial(probs, num_samples=1)  
             x = torch.concat((x, next_tokens), dim=1)
         return x
-    
-
-if __name__ == "__main__":
-    m = GPT(n_heads=4, n_blocks=3).to(device)
-    optimizer = torch.optim.AdamW(m.parameters(), lr=learning_rate)
-    m.train()
-    for epoch in range(3000):
-        xb, yb = get_batch(split='train')
-        xb.to(device)
-        yb.to(device)
-        logits, loss = m(xb, yb)
-        optimizer.zero_grad(set_to_none=True)
-        loss.backward()
-        optimizer.step()
-        print(loss)
-        
-    generation = m.generate(torch.zeros((1, 1), dtype=torch.long), max_size=200)
-    print(decode(generation[0].tolist()))
