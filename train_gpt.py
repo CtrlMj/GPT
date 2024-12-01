@@ -1,12 +1,19 @@
+import tempfile
+import os
+import typer 
+
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from torch.nn.parallel import DistributedDataParallel
 
 from ray.data.preprocessor import Preprocessor
 from ray.air.config import CheckpointConfig, DatasetConfig, RunConfig, ScalingConfig
 import ray.train as raytrain
 from ray.train import Checkpoint, session
 from ray.train.torch import TorchCheckpoint, TorchTrainer
+
+from train_gpt import GPT
 
 # hyper params
 torch.manual_seed(1337)
