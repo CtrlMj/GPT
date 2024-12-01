@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 class AttentionHead(nn.Module):
-    def __init__(self, head_size, n_embed=32, dropout=0.2) -> None:
+    def __init__(self, head_size, context_size, n_embed=32, dropout=0.2) -> None:
         super().__init__()
         self.head_size = head_size
         self.WQ = nn.Linear(n_embed, head_size, bias=False)
@@ -45,10 +45,10 @@ class FeedFroward(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, n_heads, n_embed=32) -> None:
+    def __init__(self, n_heads, context_size, n_embed=32) -> None:
         super().__init__()
         head_size = n_embed // n_heads
-        self.MultiHeadAttention = nn.ModuleList([AttentionHead(head_size) for _ in range(n_heads)])
+        self.MultiHeadAttention = nn.ModuleList([AttentionHead(head_size, context_size) for _ in range(n_heads)])
         self.project = nn.Linear(n_embed, n_embed)
         self.layer_norm1 = nn.LayerNorm(n_embed)
         self.feedForward = FeedFroward()
@@ -67,12 +67,12 @@ class DecoderBlock(nn.Module):
 
 
 class GPT(nn.Module):
-    def __init__(self, n_heads, n_blocks, vocab_size, n_embed=32):
+    def __init__(self, n_heads, n_blocks, context_size, vocab_size, n_embed=32):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, n_embed)
         self.pos_embed = nn.Embedding(context_size, n_embed)
-        self.decoders = nn.Sequential(*[DecoderBlock(n_heads) for _ in range(n_blocks)], nn.LayerNorm(n_embed))
-        # self.layer_norm = nn.LayerNorm(n_embed)
+        self.decoders = nn.Sequential(*[DecoderBlock(n_heads, context_size) for _ in range(n_blocks)], nn.LayerNorm(n_embed))
+        self.context_size = context_size
         self.lm_head = nn.Linear(n_embed, vocab_size)
 
     def forward(self, x, targets=None):
@@ -82,10 +82,9 @@ class GPT(nn.Module):
         """
         B, T = x.shape
         embeddings = self.embedding(x) 
-        pos_embeds = self.pos_embed(torch.arange(T, device=device))  # T * n_embed
+        pos_embeds = self.pos_embed(torch.arange(T,))  # T * n_embed
         x = embeddings + pos_embeds
         x = self.decoders(x)
-        # x = self.layer_norm(x)
         logits = self.lm_head(x)
         B, T, C = logits.shape  # logits shape (B, T, C)
         
@@ -104,7 +103,7 @@ class GPT(nn.Module):
         """
         self.eval()
         for step in range(max_size):
-            logits, loss = self(x[:, -context_size:])
+            logits, loss = self(x[:, -self.context_size:])
             new_token_logits = logits[:, -1, :]
             probs = F.softmax(new_token_logits, dim=-1)
             next_tokens = torch.multinomial(probs, num_samples=1)  
