@@ -146,4 +146,7 @@ def train_gpt(
     results = trainer.fit()
 
     return results.best_checkpoints[0].path
-    
+
+
+if __name__ == '__main__':
+    app()
