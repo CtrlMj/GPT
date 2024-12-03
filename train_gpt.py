@@ -7,13 +7,14 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel
 
+import ray
 from ray.data.preprocessor import Preprocessor
-from ray.train import CheckpointConfig, DatasetConfig, RunConfig, ScalingConfig
+from ray.train import CheckpointConfig, RunConfig, ScalingConfig
 import ray.train as raytrain
 from ray.train import Checkpoint, session
 from ray.train.torch import TorchCheckpoint, TorchTrainer
 
-from train_gpt import GPT
+from gpt import GPT
 from typing_extensions import Annotated
 from utils import get_batch, read_data
 
@@ -67,13 +68,15 @@ def train_loop_per_worker(config):
     n_heads = config["n_heads"]
     n_blocks = config["n_blocks"]
     context_size = config["context_size"]
+    n_embed = config['n_embed']
+
 
     # Get datasets
     torch.manual_seed(1337)  # set seed
     train_data, val_data, encode, decode, vocab_size = read_data()
    
     # Model 
-    gpt = GPT(n_heads, n_blocks, vocab_size)
+    gpt = GPT(n_heads, n_blocks, context_size, vocab_size, n_embed)
     gpt = raytrain.torch.prepare_model(gpt)
 
     # Training components
@@ -107,13 +110,13 @@ def train_gpt(
     n_heads: Annotated[int, typer.Option(help="number of attention heads")] = 4,
     n_blocks: Annotated[int, typer.Option(help="number of decoder blocks")] = 3,
     n_embed: Annotated[int, typer.Option(help="token embedding dimentionality")] = 32,
-    eval_iters: Annotated[int, typer.Option(help="Number of iterations for evaluation")] = 200,
     lr: Annotated[float, typer.Option(help="Optimization learning rate")] = 3e-4,
     context_size: Annotated[int, typer.Option(help="Context window size")] = 8,
     batch_size: Annotated[int, typer.Option(help="batch size")] = 64,
     num_epochs: Annotated[int, typer.Option(help="number of epochs")] = 3,
     n_train_steps: Annotated[int, typer.Option(help="number of training steps per epoch")] = 5000,
-    n_eval_steps: Annotated[int, typer.Option(help="number of of eval steps per epoch")] = 100
+    n_eval_steps: Annotated[int, typer.Option(help="number of of eval steps per epoch")] = 100,
+    n_workers: Annotated[int, typer.Option(help="number of worker nodes for training")] = 1,
 ):
     train_config = {
         'dropout': dropout,
@@ -124,10 +127,11 @@ def train_gpt(
         'n_eval_steps': n_eval_steps,
         'n_heads': n_heads,
         'n_blocks': n_blocks,
+        'n_embed': n_embed,
         'context_size': context_size,
     }
     scaling_config = ScalingConfig(
-        num_workers=6,
+        num_workers=n_workers,
         )
     checkpoint_config = CheckpointConfig(num_to_keep=1, 
                                          checkpoint_score_attribute="val_loss", 
@@ -149,4 +153,7 @@ def train_gpt(
 
 
 if __name__ == '__main__':
+    if ray.is_initialized():
+        ray.shutdown()
+    ray.init()
     app()
