@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 import mlflow
 
-ROOT_DIR = Path(__file__).absolute()
+ROOT_DIR = Path(__file__).parent.absolute()
 LOGS_DIR = Path(ROOT_DIR, "logs")
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
