@@ -162,7 +162,7 @@ def train_gpt(
         'best_checkpoint_dir': results.best_checkpoints[0].checkpoint.path,
         'experiment_name': experiment_name,
     }
-    save_dict(results_d, os.path.abspath("./results"))
+    save_dict(results_d, os.path.abspath(f"./results/{experiment_name}"))
 
     return results.best_checkpoints[0].checkpoint.path
 
