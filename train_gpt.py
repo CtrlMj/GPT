@@ -17,7 +17,7 @@ from ray.air.integrations.mlflow import MLflowLoggerCallback
 
 from gpt import GPT
 from typing_extensions import Annotated
-from utils import get_batch, read_data
+from utils import get_batch, read_data, save_dict
 from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
 
 
@@ -158,8 +158,13 @@ def train_gpt(
     )
 
     results = trainer.fit()
+    results_d = {
+        'best_checkpoint_dir': results.best_checkpoints[0].checkpoint.path,
+        'experiment_name': experiment_name,
+    }
+    save_dict(results_d, os.path.abspath("./results"))
 
-    return results.best_checkpoints[0].path
+    return results.best_checkpoints[0].checkpoint.path
 
 
 if __name__ == '__main__':
