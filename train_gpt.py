@@ -13,10 +13,13 @@ from ray.train import CheckpointConfig, RunConfig, ScalingConfig
 import ray.train as raytrain
 from ray.train import Checkpoint, session
 from ray.train.torch import TorchCheckpoint, TorchTrainer
+from ray.air.integrations.mlflow import MLflowLoggerCallback
 
 from gpt import GPT
 from typing_extensions import Annotated
 from utils import get_batch, read_data
+from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
+
 
 # hyper params
 torch.manual_seed(1337)
@@ -106,6 +109,7 @@ def train_loop_per_worker(config):
 
 @app.command()
 def train_gpt(
+    experiment_name: Annotated[str, typer.Option(help="Name for mlflow experiment")],
     dropout: Annotated[float, typer.Option(help="Dropout porbability")] = 0.2,
     n_heads: Annotated[int, typer.Option(help="number of attention heads")] = 4,
     n_blocks: Annotated[int, typer.Option(help="number of decoder blocks")] = 3,
@@ -133,12 +137,18 @@ def train_gpt(
     scaling_config = ScalingConfig(
         num_workers=n_workers,
         )
-    checkpoint_config = CheckpointConfig(num_to_keep=1, 
-                                         checkpoint_score_attribute="val_loss", 
-                                         checkpoint_score_order="min")
-    run_config = RunConfig(name="gpt", 
-                           checkpoint_config=checkpoint_config, 
-                           storage_path=os.path.abspath("./ray_results"))
+    checkpoint_config = CheckpointConfig(
+        num_to_keep=1,
+        checkpoint_score_attribute="val_loss",
+        checkpoint_score_order="min")
+    
+    mlflowcallback = MLflowLoggerCallback(
+        tracking_uri=MLFLOW_TRACKING_URI, 
+        experiment_name=experiment_name,
+        save_artifact=True)
+    run_config = RunConfig(checkpoint_config=checkpoint_config,
+                           storage_path=str(SHARED_STORAGE.absolute()),
+                           callbacks=[mlflowcallback])
     
     trainer = TorchTrainer(
         train_loop_per_worker=train_loop_per_worker,
