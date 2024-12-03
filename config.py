@@ -12,7 +12,7 @@ SHARED_STORAGE = Path(ROOT_DIR, "shared_storage")
 SHARED_STORAGE.mkdir(parents=True, exist_ok=True)
 
 MODEL_REGISTRY = Path(f"{SHARED_STORAGE}", "mlflow")
-MODEL_REGISTRY.mkdir()
+MODEL_REGISTRY.mkdir(exist_ok=True)
 MLFLOW_TRACKING_URI = "file://" + str(MODEL_REGISTRY.absolute())
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
