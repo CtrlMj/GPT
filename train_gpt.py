@@ -25,11 +25,11 @@ torch.manual_seed(1337)
 
 app = typer.Typer()
 
-def train_step(model, context_size, batch_size, optimizer, n_steps):
+def train_step(model, train_data, context_size, batch_size, optimizer, n_steps, device):
     model.train()
     total_loss = 0
     for step in range(n_steps):
-        xb, yb = get_batch(context_size, batch_size, split='train')
+        xb, yb = get_batch(context_size, batch_size, split=train_data)
         xb.to(device)
         yb.to(device)
         logits, loss = model(xb, yb)
@@ -41,12 +41,12 @@ def train_step(model, context_size, batch_size, optimizer, n_steps):
 
 
 @torch.no_grad()
-def eval_step(model, context_size, batch_size, n_steps):
+def eval_step(model, val_data, context_size, batch_size, n_steps, device):
     model.eval()
     total_loss = 0
     with torch.inference_mode():
         for step in range(n_steps):
-            xb, yb = get_batch(context_size, batch_size, split='eval')
+            xb, yb = get_batch(context_size, batch_size, split=val_data)
             xb.to(device)
             yb.to(device)
             logits, loss = model(xb, yb)
@@ -83,8 +83,8 @@ def train_loop_per_worker(config):
     batch_size_per_worker = batch_size // raytrain.get_context().get_world_size()
     for epoch in range(num_epochs):
         # Step
-        train_loss = train_step(gpt, context_size, batch_size_per_worker, optimizer, n_train_steps)
-        val_loss = eval_step(gpt, context_size, batch_size_per_worker, n_eval_steps)
+        train_loss = train_step(gpt, train_data, context_size, batch_size_per_worker, optimizer, n_train_steps, device)
+        val_loss = eval_step(gpt, val_data, context_size, batch_size_per_worker, n_eval_steps, device)
 
         # Checkpoint
         base_model = gpt.module if isinstance(gpt, DistributedDataParallel) else gpt

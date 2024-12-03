@@ -17,13 +17,11 @@ def read_data():
     return train_data, val_data, encode, decode, len(vocab)
 
 
-train_data, val_data, encode, decode, vocab_size = read_data()
 
-def get_batch(context_size, batch_size, split='train'):
-    data = train_data if split == 'train' else val_data
-    idx = torch.randint(high=len(data)-context_size, size=(batch_size,))
-    x = torch.stack([data[i:i+context_size] for i in idx])
-    y = torch.stack([data[i+1:i+context_size+1] for i in idx])
+def get_batch(context_size, batch_size, split):
+    idx = torch.randint(high=len(split)-context_size, size=(batch_size,))
+    x = torch.stack([split[i:i+context_size] for i in idx])
+    y = torch.stack([split[i+1:i+context_size+1] for i in idx])
     return x, y
 
 
