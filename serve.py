@@ -34,11 +34,8 @@ class servedGPT:
         
     @app.post("/predict/")
     async def _predict(self, request: Request):
-        logger.warning(f"this is your stupid {request}")
         data = await request.json()
-        logger.info(f"your request data looks like this: {data}")
         prompt = data["prompt"]
-        logger.info(f"your prompt is: {prompt}")
         encoded_prompt = encode(prompt)
         input_tensor = torch.tensor([encoded_prompt], dtype=torch.long) # shape 1*T
         generation = self.model.generate(input_tensor)
@@ -48,10 +45,14 @@ class servedGPT:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('checkpoint_path', help="Address for the checkpoint of the target model")
-    parser.add_argument('model_config', help="configuration of the gpt model to be served")
+    parser.add_argument('--experiment_name', help="Name of the experiment to load from")
     args = parser.parse_args()
-    model_config = json.loads(args.model_config)
+    with open(f"./results/{args.experiment_name}", 'r', encoding='utf-8') as f:
+        checkpoint_metadata = json.load(f)
+
+    checkpoint_metadata.pop('experiment_name')
+    checkpoint_path = checkpoint_metadata.pop('best_tunning_checkpoint_dir')
+    model_config = checkpoint_metadata
     if ray.is_initialized():
         ray.shutdown()
     ray.init()

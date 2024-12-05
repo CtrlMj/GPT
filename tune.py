@@ -109,6 +109,10 @@ def tune_gpt(
     results_d = {
         'best_tunning_checkpoint_dir': best_trial.checkpoint.path,
         'experiment_name': experiment_name,
+        'n_heads': n_heads,
+        'n_blocks': n_blocks,
+        'n_embed': n_embed,
+        'context_size': context_size,
     }
     save_dict(results_d, os.path.abspath(f"./results/{experiment_name}"))
 
