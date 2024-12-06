@@ -1,8 +1,10 @@
-import os
 import json
-from gpt import GPT
-import torch
+import os
 from typing import Dict
+
+import torch
+
+from gpt import GPT
 
 
 def read_data():

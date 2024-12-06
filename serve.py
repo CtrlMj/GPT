@@ -1,14 +1,15 @@
+import argparse
+import json
+from typing import Dict
+
+import ray
+import torch
 from fastapi import FastAPI
 from ray import serve
 from starlette.requests import Request
-from utils import load_model_from_checkpoint, encode, decode
-from config import logger
-import torch
-import argparse
-import json
-import ray
-from typing import Dict
 
+from config import logger
+from utils import decode, encode, load_model_from_checkpoint
 
 app = FastAPI(title="gpt completion", description="Tries to produce shakespeare off of your input", version="0.1")
 

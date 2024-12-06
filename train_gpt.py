@@ -1,23 +1,20 @@
-import tempfile
 import os
-import typer
+import tempfile
 from typing import Dict
 
-import torch
-from torch.nn.parallel import DistributedDataParallel
-
 import ray
-from ray.train import CheckpointConfig, RunConfig, ScalingConfig
 import ray.train as raytrain
-from ray.train import Checkpoint
-from ray.train.torch import TorchTrainer
+import torch
+import typer
 from ray.air.integrations.mlflow import MLflowLoggerCallback
-
-from gpt import GPT
+from ray.train import Checkpoint, CheckpointConfig, RunConfig, ScalingConfig
+from ray.train.torch import TorchTrainer
+from torch.nn.parallel import DistributedDataParallel
 from typing_extensions import Annotated
-from utils import get_batch, read_data, save_dict
-from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
 
+from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
+from gpt import GPT
+from utils import get_batch, read_data, save_dict
 
 # hyper params
 torch.manual_seed(1337)

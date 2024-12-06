@@ -1,9 +1,11 @@
-from utils import load_model_from_checkpoint, encode, decode
 import argparse
-import json
-import torch
 import ast
+import json
 from typing import Dict
+
+import torch
+
+from utils import decode, encode, load_model_from_checkpoint
 
 
 class LLM:
