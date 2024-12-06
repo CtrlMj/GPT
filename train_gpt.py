@@ -1,6 +1,7 @@
 import tempfile
 import os
 import typer 
+from typing import Dict
 
 import torch
 import torch.nn as nn
@@ -29,7 +30,23 @@ torch.manual_seed(1337)
 
 app = typer.Typer()
 
-def train_step(model, train_data, context_size, batch_size, optimizer, n_steps, device):
+def train_step(model: torch.nn.Module, train_data: torch.Tensor, context_size: int, 
+               batch_size: int, optimizer: torch.optim, n_steps: int, device: str) -> float:
+    """training step
+
+    Args:
+        model (torch.nn.Module): model to train
+        train_data (torch.Tensor): training data
+        context_size (int): context size
+        batch_size (int): batch size
+        optimizer (torch.optim): optimizer to use for training
+        n_steps (int): number of training steps
+        device (str): device to train the model on
+
+    Returns:
+        float: _description_
+    """
+
     model.train()
     total_loss = 0
     for step in range(n_steps):
@@ -45,7 +62,22 @@ def train_step(model, train_data, context_size, batch_size, optimizer, n_steps, 
 
 
 @torch.no_grad()
-def eval_step(model, val_data, context_size, batch_size, n_steps, device):
+def eval_step(model: torch.nn.Module, val_data: torch.Tensor, context_size: int, 
+              batch_size: int, n_steps: int, device: torch.DeviceObjType) -> float:
+    """evaluation step
+
+    Args:
+        model (torch.nn.Module): model to run evaluation on
+        val_data (torch.Tensor): validatin data
+        context_size (int): size of context
+        batch_size (int): batch size
+        n_steps (int): int
+        device (torch.DeviceObjType): device to run evaulation on
+
+    Returns:
+        float: total loss of the evaluation step
+    """
+    
     model.eval()
     total_loss = 0
     with torch.inference_mode():
@@ -59,7 +91,12 @@ def eval_step(model, val_data, context_size, batch_size, n_steps, device):
 
 
 # Training loop
-def train_loop_per_worker(config):
+def train_loop_per_worker(config: Dict) -> None:
+    """Training loop per ray cluster worker
+
+    Args:
+        config (Dict): configuration dictionary for training.
+    """
     device = 'cuda' if torch.cuda.is_available() else 'cpu' # change position embedding's device if cuda is available
     # Hyperparameters
     dropout = config["dropout"]
@@ -121,7 +158,26 @@ def train_gpt(
     n_train_steps: Annotated[int, typer.Option(help="number of training steps per epoch")] = 5000,
     n_eval_steps: Annotated[int, typer.Option(help="number of of eval steps per epoch")] = 100,
     n_workers: Annotated[int, typer.Option(help="number of worker nodes for training")] = 1,
-):
+) -> str:
+    """Main training function
+
+    Args:
+        experiment_name (Annotated[str, typer.Option, optional): experiment name. Defaults to "Name for mlflow experiment")].
+        dropout (Annotated[float, typer.Option, optional): dropout probability. Defaults to "Dropout porbability")]=0.2.
+        n_heads (Annotated[int, typer.Option, optional): number of attention heads. Defaults to "number of attention heads")]=4.
+        n_blocks (Annotated[int, typer.Option, optional): number of decoder blocks. Defaults to "number of decoder blocks")]=3.
+        n_embed (Annotated[int, typer.Option, optional): embedding dimension. Defaults to "token embedding dimentionality")]=32.
+        lr (Annotated[float, typer.Option, optional): learning rate. Defaults to "Optimization learning rate")]=3e-4.
+        context_size (Annotated[int, typer.Option, optional): context size. Defaults to "Context window size")]=8.
+        batch_size (Annotated[int, typer.Option, optional): batch size. Defaults to "batch size")]=64.
+        num_epochs (Annotated[int, typer.Option, optional): number of epochs. Defaults to "number of epochs")]=3.
+        n_train_steps (Annotated[int, typer.Option, optional): number of training steps. Defaults to "number of training steps per epoch")]=5000.
+        n_eval_steps (Annotated[int, typer.Option, optional): number of evaluation step. Defaults to "number of of eval steps per epoch")]=100.
+        n_workers (Annotated[int, typer.Option, optional): number of cluster workers allocated for training. Defaults to "number of worker nodes for training")]=1.
+
+    Returns:
+        str: path to the checkpoint
+    """
     train_config = {
         'dropout': dropout,
         'lr': lr,

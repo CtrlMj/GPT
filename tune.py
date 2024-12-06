@@ -36,7 +36,26 @@ def tune_gpt(
     n_train_steps: Annotated[int, typer.Option(help="number of training steps per epoch")] = 5000,
     n_eval_steps: Annotated[int, typer.Option(help="number of of eval steps per epoch")] = 100,
     n_workers: Annotated[int, typer.Option(help="number of worker nodes for training")] = 1,
-):
+) -> str:
+    """tuning function
+
+    Args:
+        experiment_name (Annotated[str, typer.Option, optional): name of experiment. Defaults to "Name for mlflow experiment")].
+        dropout (Annotated[float, typer.Option, optional): droput probability. Defaults to "Dropout porbability")]=0.2.
+        n_heads (Annotated[int, typer.Option, optional): number of attention heads. Defaults to "number of attention heads")]=4.
+        n_blocks (Annotated[int, typer.Option, optional): number of decoder blocks. Defaults to "number of decoder blocks")]=3.
+        n_embed (Annotated[int, typer.Option, optional): number of embedding dimension. Defaults to "token embedding dimentionality")]=32.
+        lr (Annotated[float, typer.Option, optional): learning rate. Defaults to "Optimization learning rate")]=3e-4.
+        context_size (Annotated[int, typer.Option, optional): size of context. Defaults to "Context window size")]=8.
+        batch_size (Annotated[int, typer.Option, optional): batch size. Defaults to "batch size")]=64.
+        num_epochs (Annotated[int, typer.Option, optional): number of epochs for training. Defaults to "number of epochs")]=3.
+        n_train_steps (Annotated[int, typer.Option, optional): number of training steps. Defaults to "number of training steps per epoch")]=5000.
+        n_eval_steps (Annotated[int, typer.Option, optional): number of evaluation steps. Defaults to "number of of eval steps per epoch")]=100.
+        n_workers (Annotated[int, typer.Option, optional): number of cluster workers to allocate for training. Defaults to "number of worker nodes for training")]=1.
+
+    Returns:
+        str: checkpoint path
+    """
     train_config = {
         'dropout': dropout,
         'lr': lr,

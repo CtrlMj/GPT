@@ -3,9 +3,16 @@ import argparse
 import json
 import torch
 import ast
+from typing import Dict
 
 class LLM:
-    def __init__(self, checkpoint, config):
+    def __init__(self, checkpoint: str, config: Dict) -> None:
+        """initialize the gpt model
+
+        Args:
+            checkpoint (str): path to the checkpoint to load the model from
+            config (Dict): configuration dictonary for the model
+        """
         self.gpt = load_model_from_checkpoint(checkpoint, config)
     def __call__(self, prompts):
         maxlen = len(max(prompts, key=lambda x: len(x)))
