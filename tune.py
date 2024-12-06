@@ -1,4 +1,4 @@
-from typing_extensions import Annotated 
+from typing_extensions import Annotated
 import typer
 import os
 
@@ -21,6 +21,7 @@ from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
 from utils import save_dict
 
 app = typer.Typer()
+
 
 @app.command()
 def tune_gpt(
@@ -57,87 +58,81 @@ def tune_gpt(
         str: checkpoint path
     """
     train_config = {
-        'dropout': dropout,
-        'lr': lr,
-        'num_epochs': num_epochs,
-        'batch_size': batch_size,
-        'n_train_steps': n_train_steps,
-        'n_eval_steps': n_eval_steps,
-        'n_heads': n_heads,
-        'n_blocks': n_blocks,
-        'n_embed': n_embed,
-        'context_size': context_size,
+        "dropout": dropout,
+        "lr": lr,
+        "num_epochs": num_epochs,
+        "batch_size": batch_size,
+        "n_train_steps": n_train_steps,
+        "n_eval_steps": n_eval_steps,
+        "n_heads": n_heads,
+        "n_blocks": n_blocks,
+        "n_embed": n_embed,
+        "context_size": context_size,
     }
-     
+
     # training config
     scaling_config = ScalingConfig(
         num_workers=n_workers,
-        )
+    )
 
-    trainer = TorchTrainer(
-        train_loop_per_worker=train_loop_per_worker,
-        train_loop_config=train_config,
-        scaling_config=scaling_config)
+    trainer = TorchTrainer(train_loop_per_worker=train_loop_per_worker, train_loop_config=train_config, scaling_config=scaling_config)
 
     # run config
-    checkpoint_config = CheckpointConfig(
-        num_to_keep=1,
-        checkpoint_score_attribute="val_loss",
-        checkpoint_score_order="min")
-    
-    mlflowcallback = MLflowLoggerCallback(
-        tracking_uri=MLFLOW_TRACKING_URI, 
-        experiment_name=experiment_name,
-        save_artifact=True)
-    
-    run_config = RunConfig(
-        callbacks=[mlflowcallback],
-        checkpoint_config=checkpoint_config,
-        storage_path=str(SHARED_STORAGE.absolute())
-        )
-    
+    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_score_attribute="val_loss", checkpoint_score_order="min")
+
+    mlflowcallback = MLflowLoggerCallback(tracking_uri=MLFLOW_TRACKING_URI, experiment_name=experiment_name, save_artifact=True)
+
+    run_config = RunConfig(callbacks=[mlflowcallback], checkpoint_config=checkpoint_config, storage_path=str(SHARED_STORAGE.absolute()))
+
     # tune config
 
-    initial_params = [{'train_loop_config': {"dropout_p": 0.2, "lr": 3e-4, "n_train_steps": 2000}}]
+    initial_params = [{"train_loop_config": {"dropout_p": 0.2, "lr": 3e-4, "n_train_steps": 2000}}]
     search_alg = HyperOptSearch(points_to_evaluate=initial_params)
     search_alg = ConcurrencyLimiter(search_alg, max_concurrent=2)
-    
+
     scheduler = AsyncHyperBandScheduler(
         max_t=train_config["num_epochs"],
         grace_period=1,
-        )
-    
+    )
+
     tune_config = TuneConfig(
         metric="val_loss",
         mode="min",
         search_alg=search_alg,
         scheduler=scheduler,
         num_samples=2,
-        )
-    
-    tuner = Tuner(trainable=trainer, run_config=run_config, tune_config=tune_config,
-                  param_space={"train_loop_config": {
-                      "dropout_p": tune.uniform(0.1, 0.8),
-                      "lr": tune.loguniform(1e-5, 5e-4),
-                      "n_train_steps": tune.randint(1000, 4000),
-                      }})
-    
+    )
+
+    tuner = Tuner(
+        trainable=trainer,
+        run_config=run_config,
+        tune_config=tune_config,
+        param_space={
+            "train_loop_config": {
+                "dropout_p": tune.uniform(0.1, 0.8),
+                "lr": tune.loguniform(1e-5, 5e-4),
+                "n_train_steps": tune.randint(1000, 4000),
+            }
+        },
+    )
+
     results = tuner.fit()
 
     best_trial = results.get_best_result(metric="val_loss", mode="min")
     results_d = {
-        'best_tunning_checkpoint_dir': best_trial.checkpoint.path,
-        'experiment_name': experiment_name,
-        'n_heads': n_heads,
-        'n_blocks': n_blocks,
-        'n_embed': n_embed,
-        'context_size': context_size,
+        "best_tunning_checkpoint_dir": best_trial.checkpoint.path,
+        "experiment_name": experiment_name,
+        "n_heads": n_heads,
+        "n_blocks": n_blocks,
+        "n_embed": n_embed,
+        "context_size": context_size,
     }
     save_dict(results_d, os.path.abspath(f"./results/{experiment_name}"))
 
     return best_trial.checkpoint.path
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     if ray.is_initialized():
         ray.shutdown()
     ray.init()

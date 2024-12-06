@@ -17,7 +17,7 @@ MLFLOW_TRACKING_URI = "file://" + str(MODEL_REGISTRY.absolute())
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 
-#logging
+# logging
 logging_config = {
     "version": 1,
     "disable_existing_loggers": False,
