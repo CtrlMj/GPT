@@ -4,16 +4,13 @@ import typer
 from typing import Dict
 
 import torch
-import torch.nn as nn
-from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel
 
 import ray
-from ray.data.preprocessor import Preprocessor
 from ray.train import CheckpointConfig, RunConfig, ScalingConfig
 import ray.train as raytrain
-from ray.train import Checkpoint, session
-from ray.train.torch import TorchCheckpoint, TorchTrainer
+from ray.train import Checkpoint
+from ray.train.torch import TorchTrainer
 from ray.air.integrations.mlflow import MLflowLoggerCallback
 
 from gpt import GPT
@@ -98,7 +95,6 @@ def train_loop_per_worker(config: Dict) -> None:
     """
     device = "cuda" if torch.cuda.is_available() else "cpu"  # change position embedding's device if cuda is available
     # Hyperparameters
-    dropout = config["dropout"]
     lr = config["lr"]
     num_epochs = config["num_epochs"]
     batch_size = config["batch_size"]

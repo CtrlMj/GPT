@@ -103,7 +103,7 @@ class GPT(nn.Module):
         """
         self.eval()
         for step in range(max_size):
-            logits, loss = self(x[:, -self.context_size :])
+            logits, loss = self(x[:, -self.context_size:])
             new_token_logits = logits[:, -1, :]
             probs = F.softmax(new_token_logits, dim=-1)
             next_tokens = torch.multinomial(probs, num_samples=1)

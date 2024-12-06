@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from ray import serve
-import requests
 from starlette.requests import Request
 from utils import load_model_from_checkpoint, encode, decode
 from config import logger
