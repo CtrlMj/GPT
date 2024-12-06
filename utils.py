@@ -18,7 +18,7 @@ def read_data():
     ctoi = {c: i for i, c in enumerate(vocab)}
     itoc = {i: c for i, c in enumerate(vocab)}
     encode = lambda s: [ctoi[x] for x in s]
-    decode = lambda l: "".join([itoc[x] for x in l])
+    decode = lambda lst: "".join([itoc[x] for x in lst])
     n = int(len(allshakespeare) * 0.9)
     train_data = torch.tensor(encode(allshakespeare[:n]), dtype=torch.long)
     val_data = torch.tensor(encode(allshakespeare[n:]), dtype=torch.long)
