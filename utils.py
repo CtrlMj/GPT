@@ -42,8 +42,8 @@ def get_batch(context_size: int, batch_size: int, split: torch.Tensor):
         (torch.Tensor, torch.Tensor): a batch of input tensor and predictions
     """
     idx = torch.randint(high=len(split) - context_size, size=(batch_size,))
-    x = torch.stack([split[i: i + context_size] for i in idx])
-    y = torch.stack([split[i + 1: i + context_size + 1] for i in idx])
+    x = torch.stack([split[i : i + context_size] for i in idx])
+    y = torch.stack([split[i + 1 : i + context_size + 1] for i in idx])
     return x, y
 
 
