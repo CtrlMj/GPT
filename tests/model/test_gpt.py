@@ -1,12 +1,7 @@
 import pytest
 import torch
 
-from gpt import GPT, AttentionHead
-
-
-@pytest.fixture()
-def gpt():
-    return GPT(n_heads=2, n_blocks=2, context_size=8, vocab_size=65, n_embed=32)
+from gpt import AttentionHead
 
 
 @pytest.mark.parametrize("input, target", [(torch.rand(size=[4, 8]), torch.randn(size=[4, 8])), (torch.rand(size=[2, 8]), None)])
