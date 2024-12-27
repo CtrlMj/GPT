@@ -1,6 +1,5 @@
 import pytest
 import torch
-
 from utils import get_batch, read_data
 
 

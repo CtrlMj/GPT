@@ -4,11 +4,10 @@ from typing import Dict
 
 import ray
 import torch
+from config import logger
 from fastapi import FastAPI
 from ray import serve
 from starlette.requests import Request
-
-from config import logger
 from utils import decode, encode, load_model_from_checkpoint
 
 app = FastAPI(title="gpt completion", description="Tries to produce shakespeare off of your input", version="0.1")

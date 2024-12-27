@@ -6,14 +6,13 @@ import ray
 import ray.train as raytrain
 import torch
 import typer
+from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
+from gpt import GPT
 from ray.air.integrations.mlflow import MLflowLoggerCallback
 from ray.train import Checkpoint, CheckpointConfig, RunConfig, ScalingConfig
 from ray.train.torch import TorchTrainer
 from torch.nn.parallel import DistributedDataParallel
 from typing_extensions import Annotated
-
-from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
-from gpt import GPT
 from utils import get_batch, read_data, save_dict
 
 # hyper params
