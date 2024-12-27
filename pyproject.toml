@@ -36,3 +36,8 @@ ignore = ["E501", "W503", "E226", "E731", "E203"]
 # E226: Missing white space around arithmetic operator
 # E731: do not assign a lambda expression, use a def
 # E203: Ignore slicing whitespace error
+
+# Pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
