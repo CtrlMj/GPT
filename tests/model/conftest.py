@@ -1,4 +1,5 @@
 import pytest
+
 from gpt import GPT
 
 
