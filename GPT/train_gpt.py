@@ -200,9 +200,7 @@ def train_gpt(
         "best_checkpoint_dir": results.best_checkpoints[0][0].path,
         "experiment_name": experiment_name,
     }
-    save_dict(results_d, os.path.abspath(f"{str(SHARED_STORAGE.absolute())}/results/{experiment_name}"))
-
-    return results.best_checkpoints[0].checkpoint.path
+    save_dict(results_d, path=f"{str(SHARED_STORAGE.absolute())}/results", filename=f"{experiment_name}.json")
 
 
 if __name__ == "__main__":
