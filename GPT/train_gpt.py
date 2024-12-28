@@ -197,7 +197,7 @@ def train_gpt(
 
     results = trainer.fit()
     results_d = {
-        "best_checkpoint_dir": results.get_best_result().checkpoint.path,
+        "best_checkpoint_dir": results.best_checkpoints[0][0].path,
         "experiment_name": experiment_name,
     }
     save_dict(results_d, os.path.abspath(f"{str(SHARED_STORAGE.absolute())}/results/{experiment_name}"))
