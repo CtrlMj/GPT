@@ -4,7 +4,7 @@ from typing import Dict
 
 import torch
 
-from gpt import GPT
+from GPT.gpt import GPT
 
 
 def read_data():
