@@ -201,6 +201,7 @@ def train_gpt(
         "experiment_name": experiment_name,
     }
     save_dict(results_d, path=f"{str(SHARED_STORAGE.absolute())}/results", filename=f"{experiment_name}.json")
+    return results
 
 
 if __name__ == "__main__":
