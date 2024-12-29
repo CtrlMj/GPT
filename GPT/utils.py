@@ -4,7 +4,7 @@ from typing import Dict
 
 import torch
 
-from gpt import GPT
+from GPT.gpt import GPT
 
 
 def read_data():
@@ -47,16 +47,22 @@ def get_batch(context_size: int, batch_size: int, split: torch.Tensor):
     return x, y
 
 
-def save_dict(dic: Dict, path: str) -> None:
+def save_dict(dic: Dict, path: str, filename: str) -> None:
     """saves a dictionary
+    note: filename is a separate arg from path
+    otherwise after mkdirs creates the path
+    python would complain when writing into that path:
+    IsADirectoryError: [Errno 21] Is a directory:
+
 
     Args:
         dic (Dict): dictionary to save
         path (str): path to save the dictionary
+        filename (str): name of the file in that path
     """
     if not os.path.exists(path):
         os.makedirs(path)
-    with open(path, "w", encoding="utf-8") as f:
+    with open(f"{path}/{filename}", "w", encoding="utf-8") as f:
         json.dump(dic, indent=2, fp=f)
 
 

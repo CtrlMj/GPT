@@ -4,7 +4,6 @@ import json
 from typing import Dict
 
 import torch
-
 from utils import decode, encode, load_model_from_checkpoint
 
 

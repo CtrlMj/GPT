@@ -1,5 +1,3 @@
-import os
-
 import ray
 import typer
 from ray import tune
@@ -12,9 +10,9 @@ from ray.tune.search import ConcurrencyLimiter
 from ray.tune.search.hyperopt import HyperOptSearch
 from typing_extensions import Annotated
 
-from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
-from train_gpt import train_loop_per_worker
-from utils import save_dict
+from GPT.config import MLFLOW_TRACKING_URI, SHARED_STORAGE
+from GPT.train_gpt import train_loop_per_worker
+from GPT.utils import save_dict
 
 app = typer.Typer()
 
@@ -123,7 +121,7 @@ def tune_gpt(
         "n_embed": n_embed,
         "context_size": context_size,
     }
-    save_dict(results_d, os.path.abspath(f"./results/{experiment_name}"))
+    save_dict(results_d, path=f"{str(SHARED_STORAGE.absolute())}/results", filename=f"{experiment_name}.json")
 
     return best_trial.checkpoint.path
 

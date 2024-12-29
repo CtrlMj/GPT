@@ -12,9 +12,9 @@ from ray.train.torch import TorchTrainer
 from torch.nn.parallel import DistributedDataParallel
 from typing_extensions import Annotated
 
-from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
-from gpt import GPT
-from utils import get_batch, read_data, save_dict
+from GPT.config import MLFLOW_TRACKING_URI, SHARED_STORAGE
+from GPT.gpt import GPT
+from GPT.utils import get_batch, read_data, save_dict
 
 # hyper params
 torch.manual_seed(1337)
@@ -45,8 +45,8 @@ def train_step(
     total_loss = 0
     for step in range(n_steps):
         xb, yb = get_batch(context_size, batch_size, split=train_data)
-        xb.to(device)
-        yb.to(device)
+        xb = xb.to(torch.device(device))
+        yb = yb.to(torch.device(device))
         logits, loss = model(xb, yb)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -56,7 +56,7 @@ def train_step(
 
 
 @torch.no_grad()
-def eval_step(model: torch.nn.Module, val_data: torch.Tensor, context_size: int, batch_size: int, n_steps: int, device: torch.DeviceObjType) -> float:
+def eval_step(model: torch.nn.Module, val_data: torch.Tensor, context_size: int, batch_size: int, n_steps: int, device: str) -> float:
     """evaluation step
 
     Args:
@@ -108,6 +108,7 @@ def train_loop_per_worker(config: Dict) -> None:
 
     # Model
     gpt = GPT(n_heads, n_blocks, context_size, vocab_size, n_embed)
+    gpt.to(torch.device(device))
     gpt = raytrain.torch.prepare_model(gpt)
 
     # Training components
@@ -196,12 +197,11 @@ def train_gpt(
 
     results = trainer.fit()
     results_d = {
-        "best_checkpoint_dir": results.best_checkpoints[0].checkpoint.path,
+        "best_checkpoint_dir": results.best_checkpoints[0][0].path,
         "experiment_name": experiment_name,
     }
-    save_dict(results_d, os.path.abspath(f"./results/{experiment_name}"))
-
-    return results.best_checkpoints[0].checkpoint.path
+    save_dict(results_d, path=f"{str(SHARED_STORAGE.absolute())}/results", filename=f"{experiment_name}.json")
+    return results
 
 
 if __name__ == "__main__":
