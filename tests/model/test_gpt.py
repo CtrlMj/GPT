@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from gpt import AttentionHead
+from GPT.gpt import AttentionHead
 
 
 @pytest.mark.parametrize("input, target", [(torch.rand(size=[4, 8]), torch.randn(size=[4, 8])), (torch.rand(size=[2, 8]), None)])
