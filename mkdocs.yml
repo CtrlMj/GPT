@@ -1,0 +1,16 @@
+site_name: Build GPT
+repo_url: https://github.com/CtrlMj/GPT/tree/main
+nav:
+  - Home: index.md
+  - GPT:
+    - config: ./GPT/config.md
+    - train_gpt: ./GPT/train_gpt.md
+    - tune: ./GPT/tune.md
+    - batch_predict: ./GPT/batch_predict.md
+    - serve: ./GPT/serve.md
+    - utils: ./GPT/utils.md
+theme: readthedocs
+plugins:
+  - mkdocstrings
+watch:
+  - .
