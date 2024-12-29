@@ -1,10 +1,10 @@
 import logging
-import os
 import sys
 from pathlib import Path
+
 import mlflow
 
-ROOT_DIR = Path(__file__).parent.absolute()
+ROOT_DIR = Path(__file__).parent.parent.absolute()
 LOGS_DIR = Path(ROOT_DIR, "logs")
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -17,7 +17,7 @@ MLFLOW_TRACKING_URI = "file://" + str(MODEL_REGISTRY.absolute())
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 
-#logging
+# logging
 logging_config = {
     "version": 1,
     "disable_existing_loggers": False,

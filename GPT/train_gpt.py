@@ -1,37 +1,31 @@
-import tempfile
 import os
-import typer 
+import tempfile
 from typing import Dict
 
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-from torch.nn.parallel import DistributedDataParallel
-
 import ray
-from ray.data.preprocessor import Preprocessor
-from ray.train import CheckpointConfig, RunConfig, ScalingConfig
 import ray.train as raytrain
-from ray.train import Checkpoint, session
-from ray.train.torch import TorchCheckpoint, TorchTrainer
+import torch
+import typer
 from ray.air.integrations.mlflow import MLflowLoggerCallback
-
-from gpt import GPT
+from ray.train import Checkpoint, CheckpointConfig, RunConfig, ScalingConfig
+from ray.train.torch import TorchTrainer
+from torch.nn.parallel import DistributedDataParallel
 from typing_extensions import Annotated
-from utils import get_batch, read_data, save_dict
-from config import MLFLOW_TRACKING_URI, SHARED_STORAGE
 
+from GPT.config import MLFLOW_TRACKING_URI, SHARED_STORAGE
+from GPT.gpt import GPT
+from GPT.utils import get_batch, read_data, save_dict
 
 # hyper params
 torch.manual_seed(1337)
 
 
-
-
 app = typer.Typer()
 
-def train_step(model: torch.nn.Module, train_data: torch.Tensor, context_size: int, 
-               batch_size: int, optimizer: torch.optim, n_steps: int, device: str) -> float:
+
+def train_step(
+    model: torch.nn.Module, train_data: torch.Tensor, context_size: int, batch_size: int, optimizer: torch.optim, n_steps: int, device: str
+) -> float:
     """training step
 
     Args:
@@ -51,8 +45,8 @@ def train_step(model: torch.nn.Module, train_data: torch.Tensor, context_size: i
     total_loss = 0
     for step in range(n_steps):
         xb, yb = get_batch(context_size, batch_size, split=train_data)
-        xb.to(device)
-        yb.to(device)
+        xb = xb.to(torch.device(device))
+        yb = yb.to(torch.device(device))
         logits, loss = model(xb, yb)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -62,8 +56,7 @@ def train_step(model: torch.nn.Module, train_data: torch.Tensor, context_size: i
 
 
 @torch.no_grad()
-def eval_step(model: torch.nn.Module, val_data: torch.Tensor, context_size: int, 
-              batch_size: int, n_steps: int, device: torch.DeviceObjType) -> float:
+def eval_step(model: torch.nn.Module, val_data: torch.Tensor, context_size: int, batch_size: int, n_steps: int, device: str) -> float:
     """evaluation step
 
     Args:
@@ -77,7 +70,7 @@ def eval_step(model: torch.nn.Module, val_data: torch.Tensor, context_size: int,
     Returns:
         float: total loss of the evaluation step
     """
-    
+
     model.eval()
     total_loss = 0
     with torch.inference_mode():
@@ -97,9 +90,8 @@ def train_loop_per_worker(config: Dict) -> None:
     Args:
         config (Dict): configuration dictionary for training.
     """
-    device = 'cuda' if torch.cuda.is_available() else 'cpu' # change position embedding's device if cuda is available
+    device = "cuda" if torch.cuda.is_available() else "cpu"  # change position embedding's device if cuda is available
     # Hyperparameters
-    dropout = config["dropout"]
     lr = config["lr"]
     num_epochs = config["num_epochs"]
     batch_size = config["batch_size"]
@@ -108,15 +100,15 @@ def train_loop_per_worker(config: Dict) -> None:
     n_heads = config["n_heads"]
     n_blocks = config["n_blocks"]
     context_size = config["context_size"]
-    n_embed = config['n_embed']
-
+    n_embed = config["n_embed"]
 
     # Get datasets
     torch.manual_seed(1337)  # set seed
     train_data, val_data, encode, decode, vocab_size = read_data()
-   
-    # Model 
+
+    # Model
     gpt = GPT(n_heads, n_blocks, context_size, vocab_size, n_embed)
+    gpt.to(torch.device(device))
     gpt = raytrain.torch.prepare_model(gpt)
 
     # Training components
@@ -139,9 +131,7 @@ def train_loop_per_worker(config: Dict) -> None:
         checkpoint = Checkpoint.from_directory(checkpoint_dir)
 
         # Report metrics and checkpoint.
-        raytrain.report({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss}, 
-                        checkpoint=checkpoint)
-
+        raytrain.report({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss}, checkpoint=checkpoint)
 
 
 @app.command()
@@ -179,33 +169,25 @@ def train_gpt(
         str: path to the checkpoint
     """
     train_config = {
-        'dropout': dropout,
-        'lr': lr,
-        'num_epochs': num_epochs,
-        'batch_size': batch_size,
-        'n_train_steps': n_train_steps,
-        'n_eval_steps': n_eval_steps,
-        'n_heads': n_heads,
-        'n_blocks': n_blocks,
-        'n_embed': n_embed,
-        'context_size': context_size,
+        "dropout": dropout,
+        "lr": lr,
+        "num_epochs": num_epochs,
+        "batch_size": batch_size,
+        "n_train_steps": n_train_steps,
+        "n_eval_steps": n_eval_steps,
+        "n_heads": n_heads,
+        "n_blocks": n_blocks,
+        "n_embed": n_embed,
+        "context_size": context_size,
     }
     scaling_config = ScalingConfig(
         num_workers=n_workers,
-        )
-    checkpoint_config = CheckpointConfig(
-        num_to_keep=1,
-        checkpoint_score_attribute="val_loss",
-        checkpoint_score_order="min")
-    
-    mlflowcallback = MLflowLoggerCallback(
-        tracking_uri=MLFLOW_TRACKING_URI, 
-        experiment_name=experiment_name,
-        save_artifact=True)
-    run_config = RunConfig(checkpoint_config=checkpoint_config,
-                           storage_path=str(SHARED_STORAGE.absolute()),
-                           callbacks=[mlflowcallback])
-    
+    )
+    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_score_attribute="val_loss", checkpoint_score_order="min")
+
+    mlflowcallback = MLflowLoggerCallback(tracking_uri=MLFLOW_TRACKING_URI, experiment_name=experiment_name, save_artifact=True)
+    run_config = RunConfig(checkpoint_config=checkpoint_config, storage_path=str(SHARED_STORAGE.absolute()), callbacks=[mlflowcallback])
+
     trainer = TorchTrainer(
         train_loop_per_worker=train_loop_per_worker,
         train_loop_config=train_config,
@@ -215,15 +197,14 @@ def train_gpt(
 
     results = trainer.fit()
     results_d = {
-        'best_checkpoint_dir': results.best_checkpoints[0].checkpoint.path,
-        'experiment_name': experiment_name,
+        "best_checkpoint_dir": results.best_checkpoints[0][0].path,
+        "experiment_name": experiment_name,
     }
-    save_dict(results_d, os.path.abspath(f"./results/{experiment_name}"))
+    save_dict(results_d, path=f"{str(SHARED_STORAGE.absolute())}/results", filename=f"{experiment_name}.json")
+    return results
 
-    return results.best_checkpoints[0].checkpoint.path
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     if ray.is_initialized():
         ray.shutdown()
     ray.init()
