@@ -123,7 +123,7 @@ def tune_gpt(
     }
     save_dict(results_d, path=f"{str(SHARED_STORAGE.absolute())}/results", filename=f"{experiment_name}.json")
 
-    return best_trial.checkpoint.path
+    return results
 
 
 if __name__ == "__main__":
