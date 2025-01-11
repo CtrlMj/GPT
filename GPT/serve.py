@@ -15,7 +15,7 @@ app = FastAPI(title="gpt completion", description="Tries to produce shakespeare 
 
 @serve.deployment(num_replicas="1", ray_actor_options={"num_cpus": 8, "num_gpus": 0})
 @serve.ingress(app)
-class servedGPT:
+class servedGPT:  # pragma: no cover, saving results
     def __init__(self, checkpoint: str, config: Dict) -> None:
         """initialize the gpt model
 
@@ -41,7 +41,7 @@ class servedGPT:
         return decode(generation[0].tolist())
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover, saving results
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment_name", help="Name of the experiment to load from")
     args = parser.parse_args()
