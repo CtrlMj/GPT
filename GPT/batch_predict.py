@@ -7,7 +7,7 @@ import torch
 from utils import decode, encode, load_model_from_checkpoint
 
 
-class LLM:
+class LLM:  # pragma: no cover, saving results
     def __init__(self, checkpoint: str, config: Dict) -> None:
         """initialize the gpt model
 
@@ -30,7 +30,7 @@ class LLM:
         return generations
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover, saving results
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment_name", help="path to the experiment in from which the model should come")
     parser.add_argument("--input_batch", help="list of input strings to be completed via the LLM")

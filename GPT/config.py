@@ -4,6 +4,7 @@ from pathlib import Path
 
 import mlflow
 
+# pragma: no cover, saving results
 ROOT_DIR = Path(__file__).parent.parent.absolute()
 LOGS_DIR = Path(ROOT_DIR, "logs")
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
