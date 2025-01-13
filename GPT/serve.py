@@ -45,7 +45,7 @@ if __name__ == "__main__":  # pragma: no cover, saving results
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment_name", help="Name of the experiment to load from")
     args = parser.parse_args()
-    with open(f"./results/{args.experiment_name}", "r", encoding="utf-8") as f:
+    with open(f"../shared_storage/results/{args.experiment_name}", "r", encoding="utf-8") as f:
         checkpoint_metadata = json.load(f)
 
     checkpoint_metadata.pop("experiment_name")

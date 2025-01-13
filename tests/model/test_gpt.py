@@ -4,10 +4,15 @@ import torch
 from GPT.gpt import AttentionHead
 
 
-@pytest.mark.parametrize("input, target", [(torch.rand(size=[4, 8]), torch.randn(size=[4, 8])), (torch.rand(size=[2, 8]), None)])
+@pytest.mark.parametrize(
+    "input, target", [(torch.randint(1, 65, size=[4, 8]), torch.randint(1, 65, size=[4, 8])), (torch.randint(1, 65, size=[2, 8]), None)]
+)
 def test_gpt_output(input, target, gpt):
     logits, loss = gpt(input, target)
-    assert logits.size() == input.size()
+    if target is not None:
+        assert logits.shape[0] == input.shape[0] * input.shape[1]
+    else:
+        assert logits.size()[:2] == input.size()
 
 
 def test_attention_head():

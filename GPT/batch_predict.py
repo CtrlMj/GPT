@@ -4,7 +4,8 @@ import json
 from typing import Dict
 
 import torch
-from utils import decode, encode, load_model_from_checkpoint
+
+from GPT.utils import decode, encode, load_model_from_checkpoint
 
 
 class LLM:  # pragma: no cover, saving results
@@ -36,7 +37,7 @@ if __name__ == "__main__":  # pragma: no cover, saving results
     parser.add_argument("--input_batch", help="list of input strings to be completed via the LLM")
     args = parser.parse_args()
     input_batch = ast.literal_eval(args.input_batch)
-    with open(f"./results/{args.experiment_name}", "r", encoding="utf-8") as f:
+    with open(f"../shared_storage/results/{args.experiment_name}", "r", encoding="utf-8") as f:
         checkpoint_metadata = json.load(f)
 
     checkpoint_metadata.pop("experiment_name")

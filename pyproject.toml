@@ -43,4 +43,5 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 
 # Pytest cov
+[tool.coverage.run]
 omit=["GPT/batch_predict.py", "seve.py", "config.py"]
