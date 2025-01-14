@@ -41,3 +41,7 @@ ignore = ["E501", "W503", "E226", "E731", "E203"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
+
+# Pytest cov
+[tool.coverage.run]
+omit=["GPT/batch_predict.py", "seve.py", "config.py"]

@@ -1,6 +1,6 @@
 import pytest
 
-from gpt import GPT
+from GPT.gpt import GPT
 
 
 @pytest.fixture
